@@ -10,3 +10,5 @@ fileConn <- file("05-math-python.rmd")
 writeLines(st_nb_rmd, fileConn)
 close(fileConn)
 
+# Rmd to R
+knitr::purl("05-math-python.rmd")
