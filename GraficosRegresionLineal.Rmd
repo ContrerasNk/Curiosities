@@ -1,0 +1,102 @@
+---
+title: 'Grafico: Regresión Lineal'
+author: "Julio Cesar Contreras Huerta"
+date: "7/21/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(ggplot2)
+```
+
+
+```{r}
+CH <- read.csv('/home/contreras/Desktop/BaseDatos/csv/DatosHidroelectricas.csv')
+CH
+attach(CH)
+modelo1 = lm(E ~ V, data = CH)
+RegSummary <- summary(modelo1)
+
+# Regresion lineal y gráfico 1
+Graf1 <- ggplot(CH, aes(V, E)) +
+  geom_point() +
+  geom_smooth(method = "lm",
+              colour = "red") + 
+  theme_bw() +
+  ggtitle(paste('Regresión Lineal Simple entre el \nVolumen Turbinado y la Energía Producida \nPor centrales hidroeléctricas en el 2020', sep = '')) +
+  labs(x = "Volumen Turbinado (Millones m3)",
+       y = "Energía (GW.h)",
+       colour = "Cylinders",
+       shape = "Transmission") +
+  theme(plot.title = element_text(hjust = 0.5, face = 'bold', size=15),
+        axis.text.x  = element_text(size = 11),
+        axis.text.y  = element_text(size = 11, hjust = 1),
+        axis.title.y = element_text(size = 12, hjust = 0.5, face = 'bold', vjust = 0.5),
+        axis.title.x = element_text(size = 12, hjust = 0.5, face = 'bold', vjust = 0.5)) +
+  geom_text(label = paste("Y =", 
+                          as.character(round(RegSummary$coefficients[1,1], 1)),
+                          "+", 
+                          as.character(round(RegSummary$coefficients[2,1], 1)), 
+                          "X", 
+                          sep = " "), 
+            x = 3500,
+            y = 3500,
+            size = 3.2,
+            colour = "blue") +
+  geom_text(label = paste("Coef. Determinación (R2) =", 
+                          as.character(round(RegSummary$r.squared, 2)), 
+                          sep = " "), 
+            x = 3500,
+            y = 0,
+            size = 3.2,
+            colour = "red")
+Graf1
+ggsave(plot = Graf1, filename = paste('/home/contreras/Desktop/BaseDatos/Gráficos/ScatterPlot/RegLinealVolVsEnerg.png',sep = ''), width = 35, height = 10, units = "cm", dpi = 1000)
+
+
+# Regresion lineal y gráfico 2
+
+modelo2 = lm(E ~ Q, data = CH)
+RegSummary2 <- summary(modelo2)
+
+Graf2 <- ggplot(CH, aes(Q, E)) +
+  geom_point() +
+  geom_smooth(method = "lm",
+              colour = "red") + 
+  theme_bw() +
+  ggtitle(paste('Regresión Lineal Simple entre el \nCaudal Turbinable y la Energía Producida \nPor centrales hidroeléctricas en el 2020', sep = '')) +
+  labs(x = "Caudal Turbinable (m3/s)",
+       y = "Energía (GW.h)",
+       colour = "Cylinders",
+       shape = "Transmission") +
+  theme(plot.title = element_text(hjust = 0.5, face = 'bold', size=15),
+        axis.text.x  = element_text(size = 11),
+        axis.text.y  = element_text(size = 11, hjust = 1),
+        axis.title.y = element_text(size = 12, hjust = 0.5, face = 'bold', vjust = 0.5),
+        axis.title.x = element_text(size = 12, hjust = 0.5, face = 'bold', vjust = 0.5)) +
+  geom_text(label = paste("Y =", 
+                          as.character(round(RegSummary2$coefficients[1,1], 1)),
+                          "+", 
+                          as.character(round(RegSummary2$coefficients[2,1], 1)), 
+                          "X", 
+                          sep = " "), 
+            x = 180,
+            y = 3700,
+            size = 3.2,
+            colour = "blue") +
+  geom_text(label = paste("Coef. Determinación (R2) =", 
+                          as.character(round(RegSummary2$r.squared, 2)), 
+                          sep = " "), 
+            x = 180,
+            y = 0,
+            size = 3.2,
+            colour = "red")
+Graf2
+ggsave(plot = Graf2, filename = paste('/home/contreras/Desktop/BaseDatos/Gráficos/ScatterPlot/RegLinealCaudalVsEnerg.png', sep = ''), width = 35, height = 10, units = "cm", dpi = 1000)
+
+```
+

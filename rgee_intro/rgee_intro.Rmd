@@ -1,0 +1,463 @@
+---
+title: "Introducción a Google Earth Engine en R"
+author: "Antony Barja"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    toc: true
+    toc_float:
+      collapsed: false
+      smooth_scroll: false
+    toc_depth: 3
+# bibliography: useR19_I.bib
+link-citations: yes
+---
+
+```{r setup, include=FALSE}
+# knitr::opts_chunk$set(echo = TRUE)
+```
+
+## 1. Introducción a Google Earth Engine
+
+### ¿Qué es GEE? 
+
+**Google Earth Engine** (GEE) es una plataforma gratis de computación en la nube que está diseña para el análisis de datos espacial a una escala planetaria. Esta plataforma está diseñada para potenciar **no solo** a científicos de teledetección, sino también a una audencia mucho más amplia que carece de capacidad técnica para utilizar supercomputadoras tradicionales o de recursos de computación en la nube.
+
+Si bien GEE es una **plataforma gratis**, **no significa que es OpenSource**; es decir, no se tiene acceso al código fuente, por ende no sabemos como funciona por detrás de la plataforma.
+
+Más información, visita : <https://www.sciencedirect.com/science/article/pii/S0034425717302900>.
+
+
+### Componentes de GEE
+
+* Datasets 
+* Sistema de computo optimizado 
+* Librerías cliente + Web Rest API
+
+
+### Workflow Tradicional vs Earth Engine workflow 
+
+
+```{r echo=FALSE, fig.align='center'}
+knitr::include_graphics('img/workflow.png')
+```
+
+### Catálago de datos de GEE
+
+Google ha construido un conjunto de datos espaciales más grande del planeta
+
+```{r echo=FALSE, fig.align='center'}
+knitr::include_graphics('img/dataset.gif')
+```
+
+
+## 2. Integración de R en GEE
+
+Para poder interactuar con la plataforma de Google Earth Engine existe dos librerías clientes oficiales, estás son: 
+ 
+ * **JavaScript** 
+ * **Python** 
+ 
+Entonces, **rgee** no es un API oficial de Google Earth Engine, **pero** es una gran pieza de ingeniería de software que permite integrar la API de Python a traves del paquete **reticulate**, y este nos permite pontencializar nuestro análisis espacial de datos, ya que nos permite trabajar con todo el ecosistema de r-spatial.
+
+
+```{r echo=FALSE, fig.align='center',comment='Arquitectura de rgee'}
+knitr::include_graphics('img/rgee_arquetectura.png')
+```
+
+
+Adicionalmente rgee ha creado nuevos feactures como: 
+
+* Nuevos funciones en **I/0**
+* Display de mapas interactivos 
+* Extracción de series de tiempos de forma sencilla con pocas lineas de código
+* Display de metadados 
+* Faćil manejo del "asset management" 
+
+Más información en el siguiente enlace: <https://joss.theoj.org/papers/10.21105/joss.02272>
+
+```{r echo=FALSE, fig.align='center'}
+knitr::include_graphics('img/paper.png')
+```
+
+## 3. Sintaxis de rgee 
+
+![](img/sintaxis.png)
+
+## 4. Instalación de rgee 
+
+Observaciones: 
+
+ * Para poder instalar y trabajar correctamente con rgee,se recomienda utilizar R en una versión por encima de la 3.6 .
+
+ * Si utilizas la versión 4.0 en el sistema operativo de Windows, de preferencia es recomendable tener instalado la [Rtools](https://cran.r-project.org/bin/windows/Rtools/). 
+
+Para poder instalar **rgee** primero debemos instalar las librerías **remotes** y **rstudioapi**
+
+```{r, eval=FALSE}
+install.packages('remotes')
+install.packages('rstudioapi')
+remotes::install_github('r-spatial/rgee')
+```
+
+
+```{r ,eval=FALSE}
+library(rgee)
+ee_install()
+
+```
+
+
+```{r echo=FALSE, fig.align='center'}
+knitr::include_graphics('img/rgee01.png')
+```
+
+
+```{r echo=FALSE, fig.align='center'}
+knitr::include_graphics('img/rgee02.png')
+```
+
+
+```{r echo=FALSE, fig.align='center'}
+knitr::include_graphics('img/rgee03.png')
+```
+
+
+```{r echo=FALSE, fig.align='center'}
+knitr::include_graphics('img/rgee04.png')
+```
+
+
+
+## 5. Trajando rgee con el ecosistema de r-spatial
+
+```{r , eval=FALSE}
+library(tidyverse)
+library(sf)
+library(rgee)
+library(mapedit)
+library(raster)
+library(tmap)
+library(cptcity)
+library(leaflet)
+```
+
+### Explorando el catálogo de datos de GEE
+
+```{r,eval=FALSE}
+ee_Initialize('juliocontreras1', drive = TRUE)
+```
+
+```{r,eval=FALSE}
+# lista <- ee_search_dataset() %>%
+#         ee_search_provider_list() %>%
+#         as_tibble()
+# head(lista)
+# ee_search_dataset() %>% ee_search_title_list()
+# 
+# ee_search_dataset() %>%
+#         ee_search_type('ImageCollection') %>%
+#         ee_search_provider('USGS') %>%
+#         ee_search_tags('reflectance')
+```
+
+
+
+```{r,eval=FALSE}
+# 
+# ee_search_dataset() %>% 
+#         ee_search_provider('European Union/ESA/Copernicus') %>%
+#         ee_search_tags('radar')
+#         
+```
+
+### Visualizando Modelos de Elevación Digital 
+
+```{r ,eval=FALSE}
+
+dem <- ee$Image('CGIAR/SRTM90_V4')
+viz <- list(min= 100,
+            max = 4500,
+            palette = cpt(pal = 'gmt_GMT_dem1',n = 10))
+
+slope <- ee$Terrain$slope(dem)
+
+Map$addLayer(eeObject = dem,visParams = viz)+ # new feacture gradient legend 
+Map$addLayer(eeObject = slope,visParams = list(min=0.2,max=0.75))
+
+```
+
+
+### DEM para un ámbito de estudio 
+
+```{r, eval=FALSE}
+
+ambito <- mapedit::drawFeatures()
+ambito <- ambito %>% sf_as_ee()
+ambito_dem <- dem$clip(ambito)
+Map$centerObject(ambito) +
+Map$addLayer(ambito_dem,visParams = viz)
+
+```
+
+
+### Visualizando las mejores escenas de Landsat 
+
+```{r, eval=FALSE}
+
+point <- mapedit::drawFeatures()
+point <- st_geometry(point) %>% sf_as_ee()
+
+lista <- ee$ImageCollection('LANDSAT/LC08/C01/T1_TOA')$
+        filterDate('2020-01-01','2020-10-05')$
+        filterBounds(point)$
+        filterMetadata('CLOUD_COVER','less_than',20)
+
+catalogo <- ee_get_date_ic(lista)
+
+```
+
+
+```{r, eval=FALSE}
+
+l8 <- ee$Image(catalogo$id[1])
+
+# Para visualizar metadados
+ee_print(l8)
+
+viz <- list(bands = c('B7','B5','B4'),
+            min = 0, 
+            max = 0.75,
+            gamma = 1.75)
+
+Map$centerObject(point)
+
+l8 %>%
+  Map$addLayer(visParams = viz)
+
+```
+
+### Visualizando escenas de Sentinel
+
+```{r,eval=FALSE}
+peru  <- ee$FeatureCollection('users/julius013199/Peru')
+
+so2_antes <- ee$ImageCollection('COPERNICUS/S5P/NRTI/L3_SO2')$
+        select('SO2_column_number_density')$
+        filterDate('2020-01-01','2020-03-17')$
+        mean()$
+        clip(peru)
+
+so2_despues <- ee$ImageCollection('COPERNICUS/S5P/NRTI/L3_SO2')$
+        select('SO2_column_number_density')$
+        filterDate('2020-03-18','2020-07-20')$
+        mean()$
+        clip(peru)
+```
+
+
+```{r eval=FALSE}
+
+viz <- list(min = 0.0001,
+            max = 0.0005,
+        palette = cpt(pal = 'grass_bcyr',10))
+
+Map$centerObject(peru)
+Map$addLayer(so2_antes,visParams = viz) | Map$addLayer(so2_despues,visParams = viz)
+
+```
+
+
+
+```{r eval=FALSE}
+# Como el hacer asset de GEE desde R
+ee_manage_create('users/antonybarja8/Respacial')
+resultado <- c(so2_antes,so2_despues)
+
+# for (i in 1:length(resultado)) {
+#         nombres <- c('SO2_antes','S02_despues')
+#         assetid <- paste0(ee_get_assethome(),nombres[i])
+#         task_img <- ee_image_to_asset(image = so2_antes,
+#         assetId = 'users/antonybarja8/Respacial/so2_antes',
+#         overwrite = TRUE,
+#         scale = 100000,
+#         maxPixels = 10**13)
+#         task_img$start()
+#         ee_monitoring(task_img)
+# }
+
+```
+
+## 6. Mapeo de deslizamientos con rgee 
+
+```{r eval=FALSE}
+
+# Ámbito de estudio
+box <- ee$Geometry$Rectangle(coords = c(-71.72,-15.67,-71.67,-15.64),
+                             proj = "EPSG:4326",
+                             geodesic =FALSE)
+
+# Selección de la mejor escena  
+coleccion_sen2 <- ee$ImageCollection('COPERNICUS/S2_SR')$
+  filterDate('2020-06-23','2020-06-28')$
+  filterBounds(box)$
+  filterMetadata('CLOUDY_PIXEL_PERCENTAGE','less_than',50)
+
+ee_get_date_ic(coleccion_sen2)
+
+```
+
+
+```{r eval=FALSE}
+
+# Visualizando la mejor escena de sentinel2 
+
+id_img <- 'COPERNICUS/S2_SR/20200623T145729_20200623T150542_T18LZH'
+sen2 <- ee$Image(id_img)$clip(box)
+
+Map$centerObject(box)
+viz <-list(min = 450, 
+           max =3500,
+           bands= c('B8A','B4','B3'),
+           gamma = 1.2)
+
+Map$addLayer(sen2,visParams = viz)
+
+```
+
+
+
+```{r eval=FALSE}
+# Analizando índices espectrales
+
+viz_ndvi <- list(palette = c(
+  "#d73027", "#f46d43", 
+  "#fdae61", "#fee08b",
+  "#d9ef8b", "#a6d96a",
+  "#66bd63", "#1a9850")
+)
+
+# RGB con NDVI
+Map$centerObject(box)
+sen2_rgb <- Map$addLayer(sen2, visParams = viz, name = "a1")
+sen2_ndvi <- sen2$normalizedDifference(c('B8A','B4')) %>%
+  Map$addLayer(visParams = viz_ndvi, name = "a2") 
+
+# Displaying de las dos escenas
+sen2_rgb | sen2_ndvi
+
+```
+
+
+```{r eval=FALSE}
+# Conjunto de datos de entrenamiento
+
+training <- sen2$sample(region = box,
+                         scale = 10,
+                         numPixels = 10000
+                         )
+
+# Generar el número cluster y entrenar el modelo
+clusterer <- ee$Clusterer$wekaKMeans(10)$train(training)
+
+```
+
+
+
+```{r eval=FALSE}
+# Clasificar la imágenes usando el cluster entrenado
+result <- sen2$cluster(clusterer)
+
+# Visualización de la imágen clasificada
+Map$centerObject(box)
+Map$addLayer(
+  eeObject = result$randomVisualizer(),
+  name = "clusters"
+  )
+
+```
+
+
+
+```{r eval=FALSE}
+# Desde una Image* a *Raster 
+result %>% 
+  ee_as_raster(region = box,
+               scale = 10) -> img_clas
+```
+
+
+
+```{r eval=FALSE}
+# Selección del mejor cluster que carácteriza la amenaza (cluster 6 y 5)
+img_clas %>% 
+  projectRaster(crs = '+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs') %>%
+  as('SpatialPixelsDataFrame') %>% 
+  subset(cluster <= 6 & cluster > 5 ) %>% 
+  raster() %>% 
+  as.data.frame(xy = TRUE) %>% 
+  na.omit() %>% 
+  mutate(id = 1) -> clase_des
+
+```
+
+
+
+```{r eval=FALSE}
+# Visualización simple usando ggplot
+clase_des %>% 
+  ggplot() + 
+  geom_tile(aes(x = x, y = y, fill = factor(id,labels = 'cluster:: 06-05')))+
+  scale_fill_manual(values = "red",name= "Leyenda")
+```
+
+
+```{r eval=FALSE}
+# Elaboración de mapas temáticos 
+img_clas %>% 
+  projectRaster(crs = '+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs') %>%
+  as('SpatialPixelsDataFrame') %>% 
+  subset(cluster <= 6 & cluster > 5 ) %>% 
+  raster() %>% 
+  tm_shape() + 
+  tm_raster(breaks = c(5,6),
+            palette = 'red') + 
+  tm_layout(title = 'Mapeo de deslizamiento usando rgee',
+            frame = FALSE,
+            legend.position = c(0.0,0.04),
+            title.bg.color = "black",
+            title.color = 'white',
+            title.position = c(0.01,0.95)) + 
+  tm_grid(n.x = 4,
+          n.y = 4,
+          lwd = 0.4) + 
+  tm_scale_bar(position = c(0.3,0.0),
+               lwd = 0.4) + 
+  tm_compass(position = c(0.85,0.70),
+             lwd = 0.4,size = 1) + 
+  tm_logo(c("https://raw.githubusercontent.com/r-spatial/rgee/master/man/figures/logo.png", 
+            system.file("img/tmap.png", package="tmap")),
+          height = 2, position = c("right", "bottom"))  
+
+```
+
+
+## 7. Nuevos feactures de rgee (v.1.0.6)
+
+* Ejemplo con Map$addLayer() con legenda graduada
+* Map$addLayer() + o | 
+* ee_utils_gif_creator**
+
+## Mas información visitar: 
+ 
+* 250+ rgee examples :: <https://csaybar.github.io/rgee-examples/>
+* Handbook de Google Earth Engine en R vol.01 :: <https://github.com/barja8/Handbook_rgee>
+
+<br/>
+<p align='left'>
+<a><img src='./img/logo.png' width=200></a>
+</p>
+
+
+
+
